@@ -350,9 +350,11 @@ static int convert_pix_fmt(enum AVPixelFormat pix_fmt)
     case AV_PIX_FMT_BGR0:
         return X264_CSP_BGRA;
     case AV_PIX_FMT_BGR24:
+    case AV_PIX_FMT_BGR48:
         return X264_CSP_BGR;
 
     case AV_PIX_FMT_RGB24:
+    case AV_PIX_FMT_RGB48:
         return X264_CSP_RGB;
 #endif
     case AV_PIX_FMT_NV12:      return X264_CSP_NV12;
@@ -760,8 +762,18 @@ static const enum AVPixelFormat pix_fmts_8bit_rgb[] = {
     AV_PIX_FMT_NONE
 };
 
+static const enum AVPixelFormat pix_fmts_16bit_rgb[] = {
+#ifdef X264_CSP_BGR
+    AV_PIX_FMT_BGR48,
+    AV_PIX_FMT_RGB48,
+#endif
+    AV_PIX_FMT_NONE
+};
+
 static av_cold void X264_init_static(AVCodec *codec)
 {
+//    av_log(NULL, AV_LOG_DEBUG, "init for yuv pix fmts (depth %d): %s\n", x264_bit_depth, codec->name);
+
     if (x264_bit_depth == 8)
         codec->pix_fmts = pix_fmts_8bit;
     else if (x264_bit_depth == 9)
@@ -769,6 +781,16 @@ static av_cold void X264_init_static(AVCodec *codec)
     else if (x264_bit_depth == 10)
         codec->pix_fmts = pix_fmts_10bit;
 }
+
+static av_cold void X264_init_static_rgb(AVCodec *codec)
+{
+//    av_log(NULL, AV_LOG_DEBUG, "init for rgb pix fmts (depth %d): %s\n", x264_bit_depth, codec->name);
+    if (x264_bit_depth == 8)
+        codec->pix_fmts = pix_fmts_8bit_rgb;
+    else
+        codec->pix_fmts = pix_fmts_16bit_rgb;
+}
+
 
 #define OFFSET(x) offsetof(X264Context, x)
 #define VE AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
@@ -908,5 +930,6 @@ AVCodec ff_libx264rgb_encoder = {
     .capabilities   = CODEC_CAP_DELAY | CODEC_CAP_AUTO_THREADS,
     .priv_class     = &rgbclass,
     .defaults       = x264_defaults,
-    .pix_fmts       = pix_fmts_8bit_rgb,
+//    .pix_fmts       = pix_fmts_8bit_rgb,
+    .init_static_data = X264_init_static_rgb,
 };
